@@ -19,6 +19,7 @@ Monorepo for a Microsoft Teams task manager bot that coordinates Planner and To 
 ```bash
 npm install
 npm run build
+npm test
 ```
 
 ## Environment

@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response, Router } from "express";
+import { NextFunction, Request, RequestHandler, Response, Router } from "express";
 import { z } from "zod";
 import { TaskSyncService } from "../services/taskSyncService";
 import { requireTaskApiReadAccess, requireTaskApiWriteAccess } from "./authMiddleware";
@@ -35,10 +35,23 @@ const assignTaskSchema = z.object({
   versionTag: z.string().min(1).optional()
 });
 
-export function createTaskRouter(taskSyncService: TaskSyncService) {
+export type TaskApiAccessGuards = {
+  requireReadAccess: RequestHandler;
+  requireWriteAccess: RequestHandler;
+};
+
+const defaultTaskApiAccessGuards: TaskApiAccessGuards = {
+  requireReadAccess: requireTaskApiReadAccess,
+  requireWriteAccess: requireTaskApiWriteAccess
+};
+
+export function createTaskRouter(
+  taskSyncService: TaskSyncService,
+  accessGuards: TaskApiAccessGuards = defaultTaskApiAccessGuards
+) {
   const router = Router();
 
-  router.use(requireTaskApiReadAccess);
+  router.use(accessGuards.requireReadAccess);
 
   router.get("/", async (_request, response, next) => {
     try {
@@ -48,7 +61,7 @@ export function createTaskRouter(taskSyncService: TaskSyncService) {
     }
   });
 
-  router.post("/", requireTaskApiWriteAccess, async (request, response, next) => {
+  router.post("/", accessGuards.requireWriteAccess, async (request, response, next) => {
     try {
       const payload = createTaskSchema.parse(request.body);
       const result = await taskSyncService.createTask(
@@ -62,7 +75,10 @@ export function createTaskRouter(taskSyncService: TaskSyncService) {
     }
   });
 
-  router.patch("/:plannerTaskId", requireTaskApiWriteAccess, async (request, response, next) => {
+  router.patch(
+    "/:plannerTaskId",
+    accessGuards.requireWriteAccess,
+    async (request, response, next) => {
     try {
       const payload = updateTaskSchema.parse(request.body);
       const result = await taskSyncService.updateTask(
@@ -75,11 +91,12 @@ export function createTaskRouter(taskSyncService: TaskSyncService) {
     } catch (error) {
       next(error);
     }
-  });
+    }
+  );
 
   router.post(
     "/:plannerTaskId/assign",
-    requireTaskApiWriteAccess,
+    accessGuards.requireWriteAccess,
     async (request, response, next) => {
       try {
         const payload = assignTaskSchema.parse(request.body);

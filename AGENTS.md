@@ -134,6 +134,7 @@ Standard commands:
 ```bash
 npm install
 npm run build
+npm test
 ```
 
 Workspace-specific commands:
@@ -147,6 +148,7 @@ Current known-good verification:
 
 - `npm install` completed successfully
 - `npm run build` completed successfully for both workspaces
+- `npm test` runs the bot workspace test suite with Vitest
 
 ## Architectural Constraints and Assumptions
 

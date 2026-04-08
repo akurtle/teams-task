@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
+    "test": "npm run test --workspace @teams-task-manager/bot",
     "typecheck": "npm run typecheck --workspaces",
     "dev:bot": "npm run dev --workspace @teams-task-manager/bot",
     "dev:tab": "npm run dev --workspace @teams-task-manager/config-tab"
