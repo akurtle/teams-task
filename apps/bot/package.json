@@ -1,0 +1,21 @@
+{
+  "name": "@teams-task-manager/bot",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "botbuilder": "^4.23.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.8.1",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}

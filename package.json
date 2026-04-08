@@ -1,0 +1,14 @@
+{
+  "name": "teams-task-manager-bot",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "dev:bot": "npm run dev --workspace @teams-task-manager/bot",
+    "dev:tab": "npm run dev --workspace @teams-task-manager/config-tab"
+  }
+}
