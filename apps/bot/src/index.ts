@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { BotFrameworkAdapter } from "botbuilder";
 import cors from "cors";
 import { env } from "./config/env";
@@ -10,42 +10,50 @@ import { TodoService } from "./graph/todoService";
 import { TaskStateStore } from "./services/taskStateStore";
 import { TaskSyncService } from "./services/taskSyncService";
 
-const adapter = new BotFrameworkAdapter({
-  appId: env.microsoftAppId,
-  appPassword: env.microsoftAppPassword
-});
+void start();
 
-adapter.onTurnError = async (context, error) => {
-  console.error("[onTurnError]", error);
-  await context.sendActivity("The bot hit an unexpected error.");
-};
-
-const app = express();
-const graphClientFactory = new GraphClientFactory(env);
-const plannerService = new PlannerService(graphClientFactory);
-const todoService = new TodoService(graphClientFactory);
-const stateStore = new TaskStateStore();
-const taskSyncService = new TaskSyncService(plannerService, todoService, stateStore);
-const bot = new TaskManagerBot(taskSyncService);
-
-app.use(cors());
-app.use(express.json());
-
-app.get("/health", (_request: Request, response: Response) => {
-  response.json({
-    ok: true,
-    service: "teams-task-manager-bot",
-    mode: env.nodeEnv,
-    syncedTasks: stateStore.list().length
+async function start() {
+  const adapter = new BotFrameworkAdapter({
+    appId: env.microsoftAppId,
+    appPassword: env.microsoftAppPassword
   });
-});
 
-app.use("/api/tasks", createTaskRouter(taskSyncService));
+  adapter.onTurnError = async (context, error) => {
+    console.error("[onTurnError]", error);
+    await context.sendActivity("The bot hit an unexpected error.");
+  };
 
-app.post("/api/messages", async (request: Request, response: Response) => {
-  await adapter.processActivity(request, response, async (context) => bot.run(context));
-});
+  const app = express();
+  const graphClientFactory = new GraphClientFactory(env);
+  const plannerService = new PlannerService(graphClientFactory);
+  const todoService = new TodoService(graphClientFactory);
+  const stateStore = new TaskStateStore(env.taskStateFilePath);
+  const taskSyncService = new TaskSyncService(plannerService, todoService, stateStore);
+  const bot = new TaskManagerBot(taskSyncService);
 
-app.listen(env.port, () => {
-  console.log(`Bot service listening on port ${env.port}`);
-});
+  app.use(cors());
+  app.use(express.json());
+
+  app.get("/health", async (_request: Request, response: Response, next: NextFunction) => {
+    try {
+      response.json({
+        ok: true,
+        service: "teams-task-manager-bot",
+        mode: env.nodeEnv,
+        syncedTasks: (await stateStore.list()).length
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.use("/api/tasks", createTaskRouter(taskSyncService));
+
+  app.post("/api/messages", async (request: Request, response: Response) => {
+    await adapter.processActivity(request, response, async (context) => bot.run(context));
+  });
+
+  app.listen(env.port, () => {
+    console.log(`Bot service listening on port ${env.port}`);
+  });
+}

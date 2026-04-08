@@ -15,7 +15,7 @@ export class TaskSyncService {
     private readonly taskStateStore: TaskStateStore
   ) {}
 
-  public listState() {
+  public async listState() {
     return this.taskStateStore.list();
   }
 
@@ -55,7 +55,7 @@ export class TaskSyncService {
     mutation: PlannerTaskMutation,
     userAssertion?: string
   ) {
-    const currentRecord = this.requireRecord(plannerTaskId);
+    const currentRecord = await this.requireRecord(plannerTaskId);
 
     const plannerTask = await this.retryOnVersionConflict(
       () => this.plannerService.updateTask(plannerTaskId, mutation, userAssertion),
@@ -97,7 +97,7 @@ export class TaskSyncService {
     assignment: TaskAssignmentInput,
     userAssertion?: string
   ) {
-    const currentRecord = this.requireRecord(plannerTaskId);
+    const currentRecord = await this.requireRecord(plannerTaskId);
 
     const plannerTask = await this.retryOnVersionConflict(
       () => this.plannerService.assignTask(plannerTaskId, assignment, userAssertion),
@@ -127,8 +127,8 @@ export class TaskSyncService {
     });
   }
 
-  private requireRecord(plannerTaskId: string): SyncedTaskRecord {
-    const record = this.taskStateStore.get(plannerTaskId);
+  private async requireRecord(plannerTaskId: string): Promise<SyncedTaskRecord> {
+    const record = await this.taskStateStore.get(plannerTaskId);
 
     if (!record) {
       const error = new Error(`No synchronized task state exists for planner task ${plannerTaskId}.`);

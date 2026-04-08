@@ -56,10 +56,10 @@ export class TaskManagerBot extends TeamsActivityHandler {
       }
 
       if (normalized === "task list") {
-        const records = this.taskSyncService.listState();
+        const records = await this.taskSyncService.listState();
 
         if (!records.length) {
-          await context.sendActivity("No synchronized tasks have been created in this bot session.");
+          await context.sendActivity("No synchronized tasks are currently stored.");
           await next();
           return;
         }

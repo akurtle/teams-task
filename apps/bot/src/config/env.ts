@@ -28,5 +28,6 @@ export const env = {
     .split(",")
     .map((scope) => scope.trim())
     .filter(Boolean),
+  taskStateFilePath: process.env.TaskStateFilePath ?? "data/task-state.json",
   nodeEnv: process.env.NODE_ENV ?? "development"
 };

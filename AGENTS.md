@@ -30,7 +30,7 @@ The backend in `apps/bot` currently contains these responsibilities:
 - Microsoft Graph client creation using Azure AD app credentials or on-behalf-of flow
 - Planner task create, update, and assign operations
 - To Do task create and update operations
-- In-memory synchronized task state tracking
+- File-backed synchronized task state tracking
 - REST API for listing, creating, updating, and reassigning synchronized tasks
 
 Important files:
@@ -52,7 +52,7 @@ Important files:
 - `apps/bot/src/services/taskSyncService.ts`
   Cross-service orchestration and conflict retry behavior
 - `apps/bot/src/services/taskStateStore.ts`
-  Current in-memory state store
+  Current file-backed state store
 
 ## Frontend Scope
 
@@ -85,7 +85,7 @@ Bot commands supported right now:
 - `task assign <plannerTaskId>`
   Opens an adaptive card for reassigning a synchronized task
 - `task list`
-  Posts summary cards for the tasks currently tracked in memory
+  Posts summary cards for the tasks currently stored on disk-backed state
 
 REST endpoints supported right now:
 
@@ -107,6 +107,7 @@ Backend environment variables:
 - `AzureAdClientId`
 - `AzureAdClientSecret`
 - `GraphScopes`
+- `TaskStateFilePath`
 
 Frontend environment variables:
 
@@ -117,6 +118,7 @@ Notes:
 - `GraphScopes` defaults to `https://graph.microsoft.com/.default`
 - The config tab defaults its backend target to `http://localhost:3978`
 - The create-task form converts browser-local datetime input into ISO-8601 before sending it to the backend
+- The synchronized task mapping defaults to `data/task-state.json`
 
 ## Build and Verification
 
@@ -141,8 +143,8 @@ Current known-good verification:
 
 ## Architectural Constraints and Assumptions
 
-- The current synchronized task store is in-memory only.
-  Restarting the backend loses tracked task mappings between Planner and To Do.
+- The current synchronized task store is file-backed JSON by default.
+  Restarting the backend preserves tracked task mappings between Planner and To Do as long as `TaskStateFilePath` points to persistent storage.
 - Planner concurrency is handled with a retry path on version conflict via ETag refresh.
 - To Do reassignment currently creates a new task in the target user/list context and updates the local mapping.
 - The backend is structured to support on-behalf-of Graph access, but real deployment still requires Azure AD app registration, permissions, and Teams/Bot configuration.
@@ -152,7 +154,6 @@ Current known-good verification:
 
 Highest-value next steps:
 
-- Persist synchronized task mappings in durable storage instead of memory
 - Add authentication and authorization around the REST API
 - Add Microsoft Teams SDK integration inside the React tab
 - Add outbound bot notifications for state changes triggered outside the current process

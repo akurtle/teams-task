@@ -37,8 +37,12 @@ const assignTaskSchema = z.object({
 export function createTaskRouter(taskSyncService: TaskSyncService) {
   const router = Router();
 
-  router.get("/", (_request, response) => {
-    response.json(taskSyncService.listState());
+  router.get("/", async (_request, response, next) => {
+    try {
+      response.json(await taskSyncService.listState());
+    } catch (error) {
+      next(error);
+    }
   });
 
   router.post("/", async (request, response, next) => {
