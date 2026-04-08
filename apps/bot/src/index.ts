@@ -20,13 +20,13 @@ adapter.onTurnError = async (context, error) => {
   await context.sendActivity("The bot hit an unexpected error.");
 };
 
-const bot = new TaskManagerBot();
 const app = express();
 const graphClientFactory = new GraphClientFactory(env);
 const plannerService = new PlannerService(graphClientFactory);
 const todoService = new TodoService(graphClientFactory);
 const stateStore = new TaskStateStore();
 const taskSyncService = new TaskSyncService(plannerService, todoService, stateStore);
+const bot = new TaskManagerBot(taskSyncService);
 
 app.use(cors());
 app.use(express.json());
