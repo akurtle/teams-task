@@ -28,6 +28,27 @@ export const env = {
     .split(",")
     .map((scope) => scope.trim())
     .filter(Boolean),
+  apiAudience: process.env.ApiAudience ?? process.env.AzureAdClientId ?? "",
+  apiRequiredReadScopes: (
+    process.env.ApiRequiredReadScopes ?? "Tasks.Read Tasks.ReadWrite access_as_user"
+  )
+    .split(/[,\s]+/)
+    .map((scope) => scope.trim())
+    .filter(Boolean),
+  apiRequiredWriteScopes: (
+    process.env.ApiRequiredWriteScopes ?? "Tasks.ReadWrite access_as_user"
+  )
+    .split(/[,\s]+/)
+    .map((scope) => scope.trim())
+    .filter(Boolean),
+  apiRequiredReadRoles: (process.env.ApiRequiredReadRoles ?? "Task.Sync.Read Task.Sync.ReadWrite")
+    .split(/[,\s]+/)
+    .map((role) => role.trim())
+    .filter(Boolean),
+  apiRequiredWriteRoles: (process.env.ApiRequiredWriteRoles ?? "Task.Sync.ReadWrite")
+    .split(/[,\s]+/)
+    .map((role) => role.trim())
+    .filter(Boolean),
   taskStateFilePath: process.env.TaskStateFilePath ?? "data/task-state.json",
   nodeEnv: process.env.NODE_ENV ?? "development"
 };

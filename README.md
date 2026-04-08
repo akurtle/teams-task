@@ -32,6 +32,11 @@ Backend configuration is driven by these variables:
 - `AzureAdClientId`
 - `AzureAdClientSecret`
 - `GraphScopes`
+- `ApiAudience`
+- `ApiRequiredReadScopes`
+- `ApiRequiredWriteScopes`
+- `ApiRequiredReadRoles`
+- `ApiRequiredWriteRoles`
 - `TaskStateFilePath`
 
 Task commands also expect request payloads to include a `planId`, `bucketId`, and assignee information so Planner and To Do operations can be synchronized.
@@ -41,3 +46,5 @@ Frontend configuration:
 - `VITE_API_BASE_URL`: Base URL for the bot backend, for example `http://localhost:3978`.
 
 The synchronized task mapping is persisted to disk. By default the bot writes to `data/task-state.json`, and you can override that path with `TaskStateFilePath`.
+
+The task REST API now requires an Azure AD bearer token. The backend validates issuer and audience, then authorizes requests using configured scopes or app roles.

@@ -27,6 +27,7 @@ The backend in `apps/bot` currently contains these responsibilities:
 - Azure Bot Service compatible Express host
 - Teams bot message handling
 - Adaptive card generation and submit handling
+- Azure AD bearer-token validation for REST access
 - Microsoft Graph client creation using Azure AD app credentials or on-behalf-of flow
 - Planner task create, update, and assign operations
 - To Do task create and update operations
@@ -107,6 +108,11 @@ Backend environment variables:
 - `AzureAdClientId`
 - `AzureAdClientSecret`
 - `GraphScopes`
+- `ApiAudience`
+- `ApiRequiredReadScopes`
+- `ApiRequiredWriteScopes`
+- `ApiRequiredReadRoles`
+- `ApiRequiredWriteRoles`
 - `TaskStateFilePath`
 
 Frontend environment variables:
@@ -116,6 +122,7 @@ Frontend environment variables:
 Notes:
 
 - `GraphScopes` defaults to `https://graph.microsoft.com/.default`
+- `ApiAudience` defaults to `AzureAdClientId`
 - The config tab defaults its backend target to `http://localhost:3978`
 - The create-task form converts browser-local datetime input into ISO-8601 before sending it to the backend
 - The synchronized task mapping defaults to `data/task-state.json`
@@ -145,6 +152,7 @@ Current known-good verification:
 
 - The current synchronized task store is file-backed JSON by default.
   Restarting the backend preserves tracked task mappings between Planner and To Do as long as `TaskStateFilePath` points to persistent storage.
+- The task REST API now expects valid Azure AD bearer tokens and enforces read/write access by scopes or app roles.
 - Planner concurrency is handled with a retry path on version conflict via ETag refresh.
 - To Do reassignment currently creates a new task in the target user/list context and updates the local mapping.
 - The backend is structured to support on-behalf-of Graph access, but real deployment still requires Azure AD app registration, permissions, and Teams/Bot configuration.

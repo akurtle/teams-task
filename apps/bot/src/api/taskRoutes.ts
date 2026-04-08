@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { z } from "zod";
 import { TaskSyncService } from "../services/taskSyncService";
+import { requireTaskApiReadAccess, requireTaskApiWriteAccess } from "./authMiddleware";
 import {
   PlannerTaskMutation,
   PlannerTaskUpsertInput,
@@ -37,6 +38,8 @@ const assignTaskSchema = z.object({
 export function createTaskRouter(taskSyncService: TaskSyncService) {
   const router = Router();
 
+  router.use(requireTaskApiReadAccess);
+
   router.get("/", async (_request, response, next) => {
     try {
       response.json(await taskSyncService.listState());
@@ -45,7 +48,7 @@ export function createTaskRouter(taskSyncService: TaskSyncService) {
     }
   });
 
-  router.post("/", async (request, response, next) => {
+  router.post("/", requireTaskApiWriteAccess, async (request, response, next) => {
     try {
       const payload = createTaskSchema.parse(request.body);
       const result = await taskSyncService.createTask(
@@ -59,11 +62,11 @@ export function createTaskRouter(taskSyncService: TaskSyncService) {
     }
   });
 
-  router.patch("/:plannerTaskId", async (request, response, next) => {
+  router.patch("/:plannerTaskId", requireTaskApiWriteAccess, async (request, response, next) => {
     try {
       const payload = updateTaskSchema.parse(request.body);
       const result = await taskSyncService.updateTask(
-        request.params.plannerTaskId,
+        String(request.params.plannerTaskId ?? ""),
         payload satisfies PlannerTaskMutation,
         extractBearerToken(request.header("authorization"))
       );
@@ -74,20 +77,24 @@ export function createTaskRouter(taskSyncService: TaskSyncService) {
     }
   });
 
-  router.post("/:plannerTaskId/assign", async (request, response, next) => {
-    try {
-      const payload = assignTaskSchema.parse(request.body);
-      const result = await taskSyncService.assignTask(
-        request.params.plannerTaskId,
-        payload satisfies TaskAssignmentInput,
-        extractBearerToken(request.header("authorization"))
-      );
+  router.post(
+    "/:plannerTaskId/assign",
+    requireTaskApiWriteAccess,
+    async (request, response, next) => {
+      try {
+        const payload = assignTaskSchema.parse(request.body);
+        const result = await taskSyncService.assignTask(
+          String(request.params.plannerTaskId ?? ""),
+          payload satisfies TaskAssignmentInput,
+          extractBearerToken(request.header("authorization"))
+        );
 
-      response.json(result);
-    } catch (error) {
-      next(error);
+        response.json(result);
+      } catch (error) {
+        next(error);
+      }
     }
-  });
+  );
 
   router.use((error: unknown, _request: Request, response: Response, _next: NextFunction) => {
     if (error instanceof z.ZodError) {
