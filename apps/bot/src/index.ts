@@ -7,7 +7,9 @@ import { createTaskRouter } from "./api/taskRoutes";
 import { GraphClientFactory } from "./graph/graphClientFactory";
 import { PlannerService } from "./graph/plannerService";
 import { TodoService } from "./graph/todoService";
+import { ConversationReferenceStore } from "./bot/conversationReferenceStore";
 import { TaskStateStore } from "./services/taskStateStore";
+import { TaskNotificationService } from "./services/taskNotificationService";
 import { TaskSyncService } from "./services/taskSyncService";
 
 void start();
@@ -28,8 +30,21 @@ async function start() {
   const plannerService = new PlannerService(graphClientFactory);
   const todoService = new TodoService(graphClientFactory);
   const stateStore = new TaskStateStore(env.taskStateFilePath);
-  const taskSyncService = new TaskSyncService(plannerService, todoService, stateStore);
-  const bot = new TaskManagerBot(taskSyncService);
+  const conversationReferenceStore = new ConversationReferenceStore(
+    env.conversationReferenceFilePath
+  );
+  const taskNotificationService = new TaskNotificationService(
+    adapter,
+    env.microsoftAppId,
+    conversationReferenceStore
+  );
+  const taskSyncService = new TaskSyncService(
+    plannerService,
+    todoService,
+    stateStore,
+    taskNotificationService
+  );
+  const bot = new TaskManagerBot(taskSyncService, conversationReferenceStore);
 
   app.use(cors());
   app.use(express.json());

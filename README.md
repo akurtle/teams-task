@@ -39,6 +39,7 @@ Backend configuration is driven by these variables:
 - `ApiRequiredReadRoles`
 - `ApiRequiredWriteRoles`
 - `TaskStateFilePath`
+- `ConversationReferenceFilePath`
 
 Task commands also expect request payloads to include a `planId`, `bucketId`, and assignee information so Planner and To Do operations can be synchronized.
 
@@ -49,3 +50,5 @@ Frontend configuration:
 The synchronized task mapping is persisted to disk. By default the bot writes to `data/task-state.json`, and you can override that path with `TaskStateFilePath`.
 
 The task REST API now requires an Azure AD bearer token. The backend validates issuer and audience, then authorizes requests using configured scopes or app roles.
+
+Teams conversation references are also persisted to disk so the bot can send proactive channel notifications after task state changes. The default file is `data/conversation-references.json`.

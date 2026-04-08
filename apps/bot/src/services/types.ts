@@ -77,3 +77,13 @@ export type SyncedTaskRecord = {
   channelId: string;
   versionTag?: string;
 };
+
+export type TaskChangeType = "created" | "updated" | "assigned" | "completed" | "deleted";
+
+export type TaskOperationOptions = {
+  notifyChannel?: boolean;
+};
+
+export type TaskNotifier = {
+  notifyTaskChanged(record: SyncedTaskRecord, changeType: TaskChangeType): Promise<void>;
+};

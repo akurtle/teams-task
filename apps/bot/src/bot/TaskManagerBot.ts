@@ -1,9 +1,11 @@
 import {
   CardFactory,
+  ConversationReference,
   MessageFactory,
   TeamsActivityHandler,
   TurnContext
 } from "botbuilder";
+import { ConversationReferenceStore } from "./conversationReferenceStore";
 import {
   buildAssignTaskCard,
   buildCreateTaskCard,
@@ -13,10 +15,15 @@ import {
 import { TaskSyncService } from "../services/taskSyncService";
 
 export class TaskManagerBot extends TeamsActivityHandler {
-  public constructor(private readonly taskSyncService: TaskSyncService) {
+  public constructor(
+    private readonly taskSyncService: TaskSyncService,
+    private readonly conversationReferenceStore: ConversationReferenceStore
+  ) {
     super();
 
     this.onMessage(async (context, next) => {
+      await this.captureConversationReference(context);
+
       const cardCommand = context.activity.value?.command;
       if (typeof cardCommand === "string") {
         await this.handleCardCommand(context, cardCommand);
@@ -98,7 +105,9 @@ export class TaskManagerBot extends TeamsActivityHandler {
           channelId: String(context.activity.channelData?.channel?.id ?? "")
         };
 
-        const record = await this.taskSyncService.createTask(payload);
+        const record = await this.taskSyncService.createTask(payload, undefined, {
+          notifyChannel: false
+        });
         await context.sendActivity(
           MessageFactory.attachment(CardFactory.adaptiveCard(buildTaskSummaryCard(record)))
         );
@@ -107,13 +116,18 @@ export class TaskManagerBot extends TeamsActivityHandler {
 
       case "update-task": {
         const plannerTaskId = String(context.activity.value.plannerTaskId ?? "");
-        const record = await this.taskSyncService.updateTask(plannerTaskId, {
-          title: optionalString(context.activity.value.title),
-          description: optionalString(context.activity.value.description),
-          dueDateTime: nullableString(context.activity.value.dueDateTime),
-          percentComplete: optionalNumber(context.activity.value.percentComplete),
-          versionTag: optionalString(context.activity.value.versionTag)
-        });
+        const record = await this.taskSyncService.updateTask(
+          plannerTaskId,
+          {
+            title: optionalString(context.activity.value.title),
+            description: optionalString(context.activity.value.description),
+            dueDateTime: nullableString(context.activity.value.dueDateTime),
+            percentComplete: optionalNumber(context.activity.value.percentComplete),
+            versionTag: optionalString(context.activity.value.versionTag)
+          },
+          undefined,
+          { notifyChannel: false }
+        );
 
         await context.sendActivity(
           MessageFactory.attachment(CardFactory.adaptiveCard(buildTaskSummaryCard(record)))
@@ -123,11 +137,16 @@ export class TaskManagerBot extends TeamsActivityHandler {
 
       case "assign-task": {
         const plannerTaskId = String(context.activity.value.plannerTaskId ?? "");
-        const record = await this.taskSyncService.assignTask(plannerTaskId, {
-          assigneeUserId: String(context.activity.value.assigneeUserId ?? ""),
-          assigneeTodoListId: optionalString(context.activity.value.assigneeTodoListId),
-          versionTag: optionalString(context.activity.value.versionTag)
-        });
+        const record = await this.taskSyncService.assignTask(
+          plannerTaskId,
+          {
+            assigneeUserId: String(context.activity.value.assigneeUserId ?? ""),
+            assigneeTodoListId: optionalString(context.activity.value.assigneeTodoListId),
+            versionTag: optionalString(context.activity.value.versionTag)
+          },
+          undefined,
+          { notifyChannel: false }
+        );
 
         await context.sendActivity(
           MessageFactory.attachment(CardFactory.adaptiveCard(buildTaskSummaryCard(record)))
@@ -138,6 +157,21 @@ export class TaskManagerBot extends TeamsActivityHandler {
       default:
         await context.sendActivity("Unsupported adaptive card command.");
     }
+  }
+
+  private async captureConversationReference(context: TurnContext) {
+    const teamId = String(context.activity.channelData?.team?.id ?? "");
+    const channelId = String(context.activity.channelData?.channel?.id ?? "");
+
+    if (!teamId || !channelId) {
+      return;
+    }
+
+    await this.conversationReferenceStore.upsert(
+      teamId,
+      channelId,
+      TurnContext.getConversationReference(context.activity) as Partial<ConversationReference>
+    );
   }
 }
 

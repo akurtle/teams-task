@@ -32,6 +32,7 @@ The backend in `apps/bot` currently contains these responsibilities:
 - Planner task create, update, and assign operations
 - To Do task create and update operations
 - File-backed synchronized task state tracking
+- File-backed Teams conversation reference tracking for proactive notifications
 - REST API for listing, creating, updating, and reassigning synchronized tasks
 
 Important files:
@@ -40,6 +41,8 @@ Important files:
   App composition root
 - `apps/bot/src/bot/TaskManagerBot.ts`
   Teams command handling and adaptive card submit handling
+- `apps/bot/src/bot/conversationReferenceStore.ts`
+  Persistent Teams conversation references for proactive notifications
 - `apps/bot/src/cards/taskCards.ts`
   Adaptive card payload builders
 - `apps/bot/src/api/taskRoutes.ts`
@@ -54,6 +57,8 @@ Important files:
   Cross-service orchestration and conflict retry behavior
 - `apps/bot/src/services/taskStateStore.ts`
   Current file-backed state store
+- `apps/bot/src/services/taskNotificationService.ts`
+  Proactive Teams notification dispatch
 
 ## Frontend Scope
 
@@ -88,6 +93,11 @@ Bot commands supported right now:
 - `task list`
   Posts summary cards for the tasks currently stored on disk-backed state
 
+Proactive behavior supported right now:
+
+- REST-driven create, update, and assign operations can post summary cards back into a stored Teams channel reference
+- Interactive bot card submissions suppress the proactive send because they already reply in-turn
+
 REST endpoints supported right now:
 
 - `GET /health`
@@ -114,6 +124,7 @@ Backend environment variables:
 - `ApiRequiredReadRoles`
 - `ApiRequiredWriteRoles`
 - `TaskStateFilePath`
+- `ConversationReferenceFilePath`
 
 Frontend environment variables:
 
@@ -126,6 +137,7 @@ Notes:
 - The config tab defaults its backend target to `http://localhost:3978`
 - The create-task form converts browser-local datetime input into ISO-8601 before sending it to the backend
 - The synchronized task mapping defaults to `data/task-state.json`
+- The conversation reference store defaults to `data/conversation-references.json`
 
 ## Build and Verification
 
@@ -155,6 +167,7 @@ Current known-good verification:
 - The current synchronized task store is file-backed JSON by default.
   Restarting the backend preserves tracked task mappings between Planner and To Do as long as `TaskStateFilePath` points to persistent storage.
 - The task REST API now expects valid Azure AD bearer tokens and enforces read/write access by scopes or app roles.
+- The bot can proactively notify a Teams channel only after a conversation reference has been captured for that team/channel.
 - Planner concurrency is handled with a retry path on version conflict via ETag refresh.
 - To Do reassignment currently creates a new task in the target user/list context and updates the local mapping.
 - The backend is structured to support on-behalf-of Graph access, but real deployment still requires Azure AD app registration, permissions, and Teams/Bot configuration.

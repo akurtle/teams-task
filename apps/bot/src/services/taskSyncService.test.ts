@@ -24,10 +24,14 @@ describe("TaskSyncService", () => {
       })
     };
     const taskStateStore = createMemoryStore();
+    const taskNotifier = {
+      notifyTaskChanged: vi.fn().mockResolvedValue(undefined)
+    };
     const service = new TaskSyncService(
       plannerService as never,
       todoService as never,
-      taskStateStore as never
+      taskStateStore as never,
+      taskNotifier
     );
 
     const result = await service.createTask({
@@ -45,6 +49,10 @@ describe("TaskSyncService", () => {
       todoTaskId: "todo-1",
       assigneeTodoListId: "list-1"
     });
+    expect(taskNotifier.notifyTaskChanged).toHaveBeenCalledWith(
+      expect.objectContaining({ plannerTaskId: "planner-1" }),
+      "created"
+    );
     expect(plannerService.createTask).toHaveBeenCalledOnce();
     expect(todoService.createTask).toHaveBeenCalledOnce();
   });
@@ -94,10 +102,14 @@ describe("TaskSyncService", () => {
       channelId: "channel-1",
       versionTag: "stale"
     });
+    const taskNotifier = {
+      notifyTaskChanged: vi.fn().mockResolvedValue(undefined)
+    };
     const service = new TaskSyncService(
       plannerService as never,
       todoService as never,
-      taskStateStore as never
+      taskStateStore as never,
+      taskNotifier
     );
 
     const result = await service.updateTask("planner-1", {
@@ -107,6 +119,10 @@ describe("TaskSyncService", () => {
     expect(plannerService.updateTask).toHaveBeenCalledTimes(2);
     expect(plannerService.getTask).toHaveBeenCalledOnce();
     expect(todoService.updateTask).toHaveBeenCalledOnce();
+    expect(taskNotifier.notifyTaskChanged).toHaveBeenCalledWith(
+      expect.objectContaining({ plannerTaskId: "planner-1" }),
+      "updated"
+    );
     expect(result.versionTag).toBe("v2");
     expect(result.percentComplete).toBe(100);
   });

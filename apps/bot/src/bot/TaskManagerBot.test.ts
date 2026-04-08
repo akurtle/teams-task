@@ -7,7 +7,10 @@ describe("TaskManagerBot", () => {
     const taskSyncService = {
       listState: vi.fn().mockResolvedValue([])
     };
-    const bot = new TaskManagerBot(taskSyncService as never);
+    const conversationReferenceStore = {
+      upsert: vi.fn().mockResolvedValue(undefined)
+    };
+    const bot = new TaskManagerBot(taskSyncService as never, conversationReferenceStore as never);
     const adapter = new TestAdapter(async (context) => bot.run(context));
 
     await adapter.send("task create").assertReply((activity) => {
@@ -34,7 +37,10 @@ describe("TaskManagerBot", () => {
         }
       ])
     };
-    const bot = new TaskManagerBot(taskSyncService as never);
+    const conversationReferenceStore = {
+      upsert: vi.fn().mockResolvedValue(undefined)
+    };
+    const bot = new TaskManagerBot(taskSyncService as never, conversationReferenceStore as never);
     const adapter = new TestAdapter(async (context) => bot.run(context));
 
     await adapter.send("task list").assertReply((activity) => {

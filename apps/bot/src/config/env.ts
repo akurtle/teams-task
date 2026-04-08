@@ -50,5 +50,7 @@ export const env = {
     .map((role) => role.trim())
     .filter(Boolean),
   taskStateFilePath: process.env.TaskStateFilePath ?? "data/task-state.json",
+  conversationReferenceFilePath:
+    process.env.ConversationReferenceFilePath ?? "data/conversation-references.json",
   nodeEnv: process.env.NODE_ENV ?? "development"
 };

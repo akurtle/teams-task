@@ -5,21 +5,30 @@ import {
   PlannerTaskMutation,
   PlannerTaskUpsertInput,
   SyncedTaskRecord,
-  TaskAssignmentInput
+  TaskAssignmentInput,
+  TaskNotifier,
+  TaskOperationOptions
 } from "./types";
 
 export class TaskSyncService {
   public constructor(
     private readonly plannerService: PlannerService,
     private readonly todoService: TodoService,
-    private readonly taskStateStore: TaskStateStore
+    private readonly taskStateStore: TaskStateStore,
+    private readonly taskNotifier: TaskNotifier = {
+      notifyTaskChanged: async () => undefined
+    }
   ) {}
 
   public async listState() {
     return this.taskStateStore.list();
   }
 
-  public async createTask(input: PlannerTaskUpsertInput, userAssertion?: string) {
+  public async createTask(
+    input: PlannerTaskUpsertInput,
+    userAssertion?: string,
+    options: TaskOperationOptions = {}
+  ) {
     const plannerTask = await this.plannerService.createTask(input, userAssertion);
     const todoTask = await this.todoService.createTask(
       {
@@ -33,7 +42,7 @@ export class TaskSyncService {
       userAssertion
     );
 
-    return this.taskStateStore.upsert({
+    const record = await this.taskStateStore.upsert({
       plannerTaskId: plannerTask.plannerTaskId,
       todoTaskId: todoTask.todoTaskId,
       planId: input.planId,
@@ -48,12 +57,16 @@ export class TaskSyncService {
       channelId: input.channelId,
       versionTag: plannerTask.versionTag
     });
+
+    await this.notify(record, "created", options);
+    return record;
   }
 
   public async updateTask(
     plannerTaskId: string,
     mutation: PlannerTaskMutation,
-    userAssertion?: string
+    userAssertion?: string,
+    options: TaskOperationOptions = {}
   ) {
     const currentRecord = await this.requireRecord(plannerTaskId);
 
@@ -78,7 +91,7 @@ export class TaskSyncService {
       userAssertion
     );
 
-    return this.taskStateStore.upsert({
+    const record = await this.taskStateStore.upsert({
       ...currentRecord,
       title: plannerTask.title,
       description:
@@ -90,12 +103,16 @@ export class TaskSyncService {
       percentComplete: mutation.percentComplete ?? currentRecord.percentComplete,
       versionTag: plannerTask.versionTag
     });
+
+    await this.notify(record, "updated", options);
+    return record;
   }
 
   public async assignTask(
     plannerTaskId: string,
     assignment: TaskAssignmentInput,
-    userAssertion?: string
+    userAssertion?: string,
+    options: TaskOperationOptions = {}
   ) {
     const currentRecord = await this.requireRecord(plannerTaskId);
 
@@ -118,13 +135,16 @@ export class TaskSyncService {
       userAssertion
     );
 
-    return this.taskStateStore.upsert({
+    const record = await this.taskStateStore.upsert({
       ...currentRecord,
       assigneeUserId: assignment.assigneeUserId,
       assigneeTodoListId: todoTask.assigneeTodoListId,
       todoTaskId: todoTask.todoTaskId,
       versionTag: plannerTask.versionTag
     });
+
+    await this.notify(record, "assigned", options);
+    return record;
   }
 
   private async requireRecord(plannerTaskId: string): Promise<SyncedTaskRecord> {
@@ -160,6 +180,22 @@ export class TaskSyncService {
 
       await refresh();
       return action();
+    }
+  }
+
+  private async notify(
+    record: SyncedTaskRecord,
+    changeType: "created" | "updated" | "assigned",
+    options: TaskOperationOptions
+  ) {
+    if (options.notifyChannel === false) {
+      return;
+    }
+
+    try {
+      await this.taskNotifier.notifyTaskChanged(record, changeType);
+    } catch (error) {
+      console.error("[task-notification-error]", error);
     }
   }
 }
