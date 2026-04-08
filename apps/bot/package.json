@@ -8,11 +8,16 @@
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
+    "@azure/msal-node": "^3.2.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "botbuilder": "^4.23.3",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.21.0"
+    "express": "^4.21.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.8.1",
     "tsx": "^4.19.1",

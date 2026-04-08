@@ -20,3 +20,17 @@ Monorepo for a Microsoft Teams task manager bot that coordinates Planner and To 
 npm install
 npm run build
 ```
+
+## Environment
+
+Backend configuration is driven by these variables:
+
+- `MicrosoftAppId`
+- `MicrosoftAppPassword`
+- `MicrosoftAppTenantId`
+- `AzureAdTenantId`
+- `AzureAdClientId`
+- `AzureAdClientSecret`
+- `GraphScopes`
+
+Task commands also expect request payloads to include a `planId`, `bucketId`, and assignee information so Planner and To Do operations can be synchronized.

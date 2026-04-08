@@ -2,7 +2,13 @@ import { config } from "dotenv";
 
 config();
 
-const required = ["MicrosoftAppId", "MicrosoftAppPassword"];
+const required = [
+  "MicrosoftAppId",
+  "MicrosoftAppPassword",
+  "AzureAdTenantId",
+  "AzureAdClientId",
+  "AzureAdClientSecret"
+];
 
 for (const key of required) {
   if (!process.env[key]) {
@@ -14,5 +20,13 @@ export const env = {
   port: Number(process.env.PORT ?? 3978),
   microsoftAppId: process.env.MicrosoftAppId ?? "",
   microsoftAppPassword: process.env.MicrosoftAppPassword ?? "",
+  microsoftAppTenantId: process.env.MicrosoftAppTenantId ?? "",
+  azureAdTenantId: process.env.AzureAdTenantId ?? "",
+  azureAdClientId: process.env.AzureAdClientId ?? "",
+  azureAdClientSecret: process.env.AzureAdClientSecret ?? "",
+  graphScopes: (process.env.GraphScopes ?? "https://graph.microsoft.com/.default")
+    .split(",")
+    .map((scope) => scope.trim())
+    .filter(Boolean),
   nodeEnv: process.env.NODE_ENV ?? "development"
 };
