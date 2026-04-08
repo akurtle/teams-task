@@ -34,3 +34,7 @@ Backend configuration is driven by these variables:
 - `GraphScopes`
 
 Task commands also expect request payloads to include a `planId`, `bucketId`, and assignee information so Planner and To Do operations can be synchronized.
+
+Frontend configuration:
+
+- `VITE_API_BASE_URL`: Base URL for the bot backend, for example `http://localhost:3978`.
