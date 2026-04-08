@@ -2,6 +2,7 @@ import { PlannerService } from "../graph/plannerService";
 import { TodoService } from "../graph/todoService";
 import { TaskStateStore } from "./taskStateStore";
 import {
+  PlannerTaskDeletionInput,
   PlannerTaskMutation,
   PlannerTaskUpsertInput,
   SyncedTaskRecord,
@@ -135,6 +136,13 @@ export class TaskSyncService {
       userAssertion
     );
 
+    await this.todoService.deleteTask(
+      currentRecord.todoTaskId,
+      currentRecord.assigneeUserId,
+      currentRecord.assigneeTodoListId,
+      userAssertion
+    );
+
     const record = await this.taskStateStore.upsert({
       ...currentRecord,
       assigneeUserId: assignment.assigneeUserId,
@@ -145,6 +153,80 @@ export class TaskSyncService {
 
     await this.notify(record, "assigned", options);
     return record;
+  }
+
+  public async completeTask(
+    plannerTaskId: string,
+    userAssertion?: string,
+    options: TaskOperationOptions = {}
+  ) {
+    const currentRecord = await this.requireRecord(plannerTaskId);
+    const plannerTask = await this.retryOnVersionConflict(
+      () =>
+        this.plannerService.updateTask(
+          plannerTaskId,
+          {
+            percentComplete: 100,
+            versionTag: currentRecord.versionTag
+          },
+          userAssertion
+        ),
+      async () => {
+        const latestTask = await this.plannerService.getTask(plannerTaskId, userAssertion);
+        currentRecord.versionTag = latestTask.versionTag;
+      }
+    );
+
+    await this.todoService.updateTask(
+      currentRecord.todoTaskId,
+      {
+        percentComplete: 100
+      },
+      currentRecord.assigneeUserId,
+      currentRecord.assigneeTodoListId,
+      userAssertion
+    );
+
+    const record = await this.taskStateStore.upsert({
+      ...currentRecord,
+      percentComplete: 100,
+      versionTag: plannerTask.versionTag
+    });
+
+    await this.notify(record, "completed", options);
+    return record;
+  }
+
+  public async deleteTask(
+    plannerTaskId: string,
+    deletion: PlannerTaskDeletionInput = {},
+    userAssertion?: string,
+    options: TaskOperationOptions = {}
+  ) {
+    const currentRecord = await this.requireRecord(plannerTaskId);
+
+    await this.retryOnVersionConflict(
+      () => this.plannerService.deleteTask(plannerTaskId, deletion, userAssertion),
+      async () => {
+        const latestTask = await this.plannerService.getTask(plannerTaskId, userAssertion);
+        currentRecord.versionTag = latestTask.versionTag;
+      }
+    );
+
+    await this.todoService.deleteTask(
+      currentRecord.todoTaskId,
+      currentRecord.assigneeUserId,
+      currentRecord.assigneeTodoListId,
+      userAssertion
+    );
+    await this.taskStateStore.delete(plannerTaskId);
+    await this.notify(currentRecord, "deleted", options);
+
+    return {
+      deleted: true,
+      plannerTaskId,
+      todoTaskId: currentRecord.todoTaskId
+    };
   }
 
   private async requireRecord(plannerTaskId: string): Promise<SyncedTaskRecord> {
@@ -185,7 +267,7 @@ export class TaskSyncService {
 
   private async notify(
     record: SyncedTaskRecord,
-    changeType: "created" | "updated" | "assigned",
+    changeType: "created" | "updated" | "assigned" | "completed" | "deleted",
     options: TaskOperationOptions
   ) {
     if (options.notifyChannel === false) {

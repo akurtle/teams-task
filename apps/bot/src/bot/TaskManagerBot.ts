@@ -62,6 +62,29 @@ export class TaskManagerBot extends TeamsActivityHandler {
         return;
       }
 
+      if (normalized.startsWith("task complete ")) {
+        const plannerTaskId = text.split(/\s+/).at(-1) ?? "";
+        const record = await this.taskSyncService.completeTask(plannerTaskId, undefined, {
+          notifyChannel: false
+        });
+
+        await context.sendActivity(
+          MessageFactory.attachment(CardFactory.adaptiveCard(buildTaskSummaryCard(record)))
+        );
+        await next();
+        return;
+      }
+
+      if (normalized.startsWith("task delete ")) {
+        const plannerTaskId = text.split(/\s+/).at(-1) ?? "";
+        await this.taskSyncService.deleteTask(plannerTaskId, {}, undefined, {
+          notifyChannel: false
+        });
+        await context.sendActivity(`Deleted synchronized task ${plannerTaskId}.`);
+        await next();
+        return;
+      }
+
       if (normalized === "task list") {
         const records = await this.taskSyncService.listState();
 
@@ -82,7 +105,7 @@ export class TaskManagerBot extends TeamsActivityHandler {
       }
 
       await context.sendActivity(
-        "Commands: `task create`, `task update <plannerTaskId>`, `task assign <plannerTaskId>`, `task list`."
+        "Commands: `task create`, `task update <plannerTaskId>`, `task assign <plannerTaskId>`, `task complete <plannerTaskId>`, `task delete <plannerTaskId>`, `task list`."
       );
 
       await next();
@@ -151,6 +174,27 @@ export class TaskManagerBot extends TeamsActivityHandler {
         await context.sendActivity(
           MessageFactory.attachment(CardFactory.adaptiveCard(buildTaskSummaryCard(record)))
         );
+        return;
+      }
+
+      case "complete-task": {
+        const plannerTaskId = String(context.activity.value.plannerTaskId ?? "");
+        const record = await this.taskSyncService.completeTask(plannerTaskId, undefined, {
+          notifyChannel: false
+        });
+
+        await context.sendActivity(
+          MessageFactory.attachment(CardFactory.adaptiveCard(buildTaskSummaryCard(record)))
+        );
+        return;
+      }
+
+      case "delete-task": {
+        const plannerTaskId = String(context.activity.value.plannerTaskId ?? "");
+        await this.taskSyncService.deleteTask(plannerTaskId, {}, undefined, {
+          notifyChannel: false
+        });
+        await context.sendActivity(`Deleted synchronized task ${plannerTaskId}.`);
         return;
       }
 

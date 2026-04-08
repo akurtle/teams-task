@@ -30,7 +30,8 @@ The backend in `apps/bot` currently contains these responsibilities:
 - Azure AD bearer-token validation for REST access
 - Microsoft Graph client creation using Azure AD app credentials or on-behalf-of flow
 - Planner task create, update, and assign operations
-- To Do task create and update operations
+- Planner task complete and delete operations
+- To Do task create, update, and delete operations
 - File-backed synchronized task state tracking
 - File-backed Teams conversation reference tracking for proactive notifications
 - REST API for listing, creating, updating, and reassigning synchronized tasks
@@ -90,6 +91,10 @@ Bot commands supported right now:
   Opens an adaptive card for updating a synchronized task
 - `task assign <plannerTaskId>`
   Opens an adaptive card for reassigning a synchronized task
+- `task complete <plannerTaskId>`
+  Completes the synchronized task in Planner and To Do
+- `task delete <plannerTaskId>`
+  Deletes the synchronized task from Planner and To Do
 - `task list`
   Posts summary cards for the tasks currently stored on disk-backed state
 
@@ -98,6 +103,12 @@ Proactive behavior supported right now:
 - REST-driven create, update, and assign operations can post summary cards back into a stored Teams channel reference
 - Interactive bot card submissions suppress the proactive send because they already reply in-turn
 
+Lifecycle behavior supported right now:
+
+- Completing a task updates both Planner and To Do to completed state
+- Deleting a task removes both the Planner task and the linked To Do task
+- Reassigning a task creates the replacement To Do task and removes the old assignee's To Do task
+
 REST endpoints supported right now:
 
 - `GET /health`
@@ -105,6 +116,8 @@ REST endpoints supported right now:
 - `POST /api/tasks`
 - `PATCH /api/tasks/:plannerTaskId`
 - `POST /api/tasks/:plannerTaskId/assign`
+- `POST /api/tasks/:plannerTaskId/complete`
+- `DELETE /api/tasks/:plannerTaskId`
 
 ## Runtime and Environment
 
@@ -168,8 +181,8 @@ Current known-good verification:
   Restarting the backend preserves tracked task mappings between Planner and To Do as long as `TaskStateFilePath` points to persistent storage.
 - The task REST API now expects valid Azure AD bearer tokens and enforces read/write access by scopes or app roles.
 - The bot can proactively notify a Teams channel only after a conversation reference has been captured for that team/channel.
+- Reassignment now actively removes the old To Do item to reduce duplicate tasks.
 - Planner concurrency is handled with a retry path on version conflict via ETag refresh.
-- To Do reassignment currently creates a new task in the target user/list context and updates the local mapping.
 - The backend is structured to support on-behalf-of Graph access, but real deployment still requires Azure AD app registration, permissions, and Teams/Bot configuration.
 - The React tab is a functional control panel, not yet a fully Teams SDK-aware production tab experience.
 
@@ -177,12 +190,8 @@ Current known-good verification:
 
 Highest-value next steps:
 
-- Add authentication and authorization around the REST API
 - Add Microsoft Teams SDK integration inside the React tab
-- Add outbound bot notifications for state changes triggered outside the current process
-- Add tests for Graph service adapters, route validation, and bot command handling
 - Add deployment assets such as Teams app manifest, Azure deployment config, and CI pipeline
-- Handle deletion and completion synchronization more explicitly across Planner and To Do
 
 ## Git Context
 

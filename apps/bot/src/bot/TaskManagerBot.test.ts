@@ -48,4 +48,32 @@ describe("TaskManagerBot", () => {
       expect(card.body?.[0]?.text).toBe("Launch prep");
     });
   });
+
+  it("completes synchronized tasks from text commands", async () => {
+    const taskSyncService = {
+      completeTask: vi.fn().mockResolvedValue({
+        plannerTaskId: "planner-1",
+        todoTaskId: "todo-1",
+        title: "Launch prep",
+        description: "Coordinate launch",
+        percentComplete: 100,
+        planId: "plan-1",
+        bucketId: "bucket-1",
+        assigneeUserId: "user-1",
+        assigneeTodoListId: "list-1",
+        teamId: "team-1",
+        channelId: "channel-1"
+      })
+    };
+    const conversationReferenceStore = {
+      upsert: vi.fn().mockResolvedValue(undefined)
+    };
+    const bot = new TaskManagerBot(taskSyncService as never, conversationReferenceStore as never);
+    const adapter = new TestAdapter(async (context) => bot.run(context));
+
+    await adapter.send("task complete planner-1").assertReply((activity) => {
+      const card = activity.attachments?.[0]?.content as { body?: Array<{ text?: string }> };
+      expect(card.body?.[0]?.text).toBe("Launch prep");
+    });
+  });
 });

@@ -52,3 +52,5 @@ The synchronized task mapping is persisted to disk. By default the bot writes to
 The task REST API now requires an Azure AD bearer token. The backend validates issuer and audience, then authorizes requests using configured scopes or app roles.
 
 Teams conversation references are also persisted to disk so the bot can send proactive channel notifications after task state changes. The default file is `data/conversation-references.json`.
+
+Lifecycle sync now supports explicit completion and deletion operations, and reassignment removes the old To Do task to avoid orphaned duplicates.

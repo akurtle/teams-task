@@ -35,6 +35,10 @@ const assignTaskSchema = z.object({
   versionTag: z.string().min(1).optional()
 });
 
+const completeTaskSchema = z.object({
+  versionTag: z.string().min(1).optional()
+});
+
 export type TaskApiAccessGuards = {
   requireReadAccess: RequestHandler;
   requireWriteAccess: RequestHandler;
@@ -79,18 +83,18 @@ export function createTaskRouter(
     "/:plannerTaskId",
     accessGuards.requireWriteAccess,
     async (request, response, next) => {
-    try {
-      const payload = updateTaskSchema.parse(request.body);
-      const result = await taskSyncService.updateTask(
-        String(request.params.plannerTaskId ?? ""),
-        payload satisfies PlannerTaskMutation,
-        extractBearerToken(request.header("authorization"))
-      );
+      try {
+        const payload = updateTaskSchema.parse(request.body);
+        const result = await taskSyncService.updateTask(
+          String(request.params.plannerTaskId ?? ""),
+          payload satisfies PlannerTaskMutation,
+          extractBearerToken(request.header("authorization"))
+        );
 
-      response.json(result);
-    } catch (error) {
-      next(error);
-    }
+        response.json(result);
+      } catch (error) {
+        next(error);
+      }
     }
   );
 
@@ -103,6 +107,42 @@ export function createTaskRouter(
         const result = await taskSyncService.assignTask(
           String(request.params.plannerTaskId ?? ""),
           payload satisfies TaskAssignmentInput,
+          extractBearerToken(request.header("authorization"))
+        );
+
+        response.json(result);
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.post(
+    "/:plannerTaskId/complete",
+    accessGuards.requireWriteAccess,
+    async (request, response, next) => {
+      try {
+        completeTaskSchema.parse(request.body ?? {});
+        const result = await taskSyncService.completeTask(
+          String(request.params.plannerTaskId ?? ""),
+          extractBearerToken(request.header("authorization"))
+        );
+
+        response.json(result);
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.delete(
+    "/:plannerTaskId",
+    accessGuards.requireWriteAccess,
+    async (request, response, next) => {
+      try {
+        const result = await taskSyncService.deleteTask(
+          String(request.params.plannerTaskId ?? ""),
+          {},
           extractBearerToken(request.header("authorization"))
         );
 

@@ -1,5 +1,6 @@
 import { GraphClientFactory } from "./graphClientFactory";
 import {
+  PlannerTaskDeletionInput,
   PlannerTaskMutation,
   PlannerTaskRecord,
   PlannerTaskUpsertInput,
@@ -92,6 +93,21 @@ export class PlannerService {
 
     const details = await this.getTaskDetails(plannerTaskId, userAssertion);
     return toPlannerTaskRecord(updatedTask, details.description);
+  }
+
+  public async deleteTask(
+    plannerTaskId: string,
+    deletion: PlannerTaskDeletionInput = {},
+    userAssertion?: string
+  ) {
+    const client = await this.graphClientFactory.createClient(userAssertion);
+    const currentTask = await this.getTask(plannerTaskId, userAssertion);
+    const etag = deletion.versionTag ?? currentTask.versionTag ?? "*";
+
+    await this.graphClientFactory
+      .request(client, `/planner/tasks/${plannerTaskId}`)
+      .header("If-Match", etag)
+      .delete();
   }
 
   public async getTask(plannerTaskId: string, userAssertion?: string) {

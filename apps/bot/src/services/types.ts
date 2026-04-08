@@ -19,6 +19,10 @@ export type PlannerTaskMutation = {
   versionTag?: string;
 };
 
+export type PlannerTaskDeletionInput = {
+  versionTag?: string;
+};
+
 export type TaskAssignmentInput = {
   assigneeUserId: string;
   assigneeTodoListId?: string;

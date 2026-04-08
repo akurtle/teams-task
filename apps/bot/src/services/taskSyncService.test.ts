@@ -126,6 +126,64 @@ describe("TaskSyncService", () => {
     expect(result.versionTag).toBe("v2");
     expect(result.percentComplete).toBe(100);
   });
+
+  it("deletes the old To Do task when reassigning ownership", async () => {
+    const plannerService = {
+      assignTask: vi.fn().mockResolvedValue({
+        plannerTaskId: "planner-1",
+        title: "Ship release",
+        planId: "plan-1",
+        bucketId: "bucket-1",
+        percentComplete: 0,
+        versionTag: "v2"
+      })
+    };
+    const todoService = {
+      rehomeTask: vi.fn().mockResolvedValue({
+        todoTaskId: "todo-2",
+        assigneeUserId: "user-2",
+        assigneeTodoListId: "list-2",
+        title: "Ship release",
+        status: "notStarted"
+      }),
+      deleteTask: vi.fn().mockResolvedValue(undefined)
+    };
+    const taskStateStore = createMemoryStore({
+      plannerTaskId: "planner-1",
+      todoTaskId: "todo-1",
+      title: "Ship release",
+      percentComplete: 0,
+      planId: "plan-1",
+      bucketId: "bucket-1",
+      assigneeUserId: "user-1",
+      assigneeTodoListId: "list-1",
+      teamId: "team-1",
+      channelId: "channel-1",
+      versionTag: "v1"
+    });
+    const taskNotifier = {
+      notifyTaskChanged: vi.fn().mockResolvedValue(undefined)
+    };
+    const service = new TaskSyncService(
+      plannerService as never,
+      todoService as never,
+      taskStateStore as never,
+      taskNotifier
+    );
+
+    const result = await service.assignTask("planner-1", {
+      assigneeUserId: "user-2",
+      assigneeTodoListId: "list-2"
+    });
+
+    expect(todoService.deleteTask).toHaveBeenCalledWith("todo-1", "user-1", "list-1", undefined);
+    expect(result.todoTaskId).toBe("todo-2");
+    expect(result.assigneeUserId).toBe("user-2");
+    expect(taskNotifier.notifyTaskChanged).toHaveBeenCalledWith(
+      expect.objectContaining({ plannerTaskId: "planner-1" }),
+      "assigned"
+    );
+  });
 });
 
 function createMemoryStore(seed?: SyncedTaskRecord) {

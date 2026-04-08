@@ -125,6 +125,24 @@ export class TodoService {
     );
   }
 
+  public async deleteTask(
+    todoTaskId: string,
+    assigneeUserId: string,
+    assigneeTodoListId?: string,
+    userAssertion?: string
+  ) {
+    const client = await this.graphClientFactory.createClient(userAssertion);
+    const listId = await this.resolveTodoListId(
+      assigneeUserId,
+      assigneeTodoListId,
+      userAssertion
+    );
+
+    await this.graphClientFactory
+      .request(client, `/users/${assigneeUserId}/todo/lists/${listId}/tasks/${todoTaskId}`)
+      .delete();
+  }
+
   private async resolveTodoListId(
     userId: string,
     preferredListId: string | undefined,

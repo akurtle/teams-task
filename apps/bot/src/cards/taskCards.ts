@@ -248,6 +248,24 @@ export function buildTaskSummaryCard(record: SyncedTaskRecord) {
           plannerTaskId: record.plannerTaskId,
           versionTag: record.versionTag
         }
+      },
+      {
+        type: "Action.Submit",
+        title: "Complete",
+        data: {
+          command: "complete-task",
+          plannerTaskId: record.plannerTaskId,
+          versionTag: record.versionTag
+        }
+      },
+      {
+        type: "Action.Submit",
+        title: "Delete",
+        data: {
+          command: "delete-task",
+          plannerTaskId: record.plannerTaskId,
+          versionTag: record.versionTag
+        }
       }
     ]
   };

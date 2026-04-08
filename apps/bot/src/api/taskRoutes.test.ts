@@ -53,6 +53,30 @@ describe("taskRoutes", () => {
     expect(response.body.error).toBe("ValidationError");
     expect(taskSyncService.createTask).not.toHaveBeenCalled();
   });
+
+  it("routes complete requests to the sync service", async () => {
+    const taskSyncService = {
+      listState: vi.fn().mockResolvedValue([]),
+      completeTask: vi.fn().mockResolvedValue({
+        plannerTaskId: "planner-1",
+        todoTaskId: "todo-1",
+        title: "Launch prep",
+        percentComplete: 100,
+        planId: "plan-1",
+        bucketId: "bucket-1",
+        assigneeUserId: "user-1",
+        assigneeTodoListId: "list-1",
+        teamId: "team-1",
+        channelId: "channel-1"
+      })
+    };
+
+    const app = createApp(taskSyncService);
+    const response = await request(app).post("/api/tasks/planner-1/complete").send({});
+
+    expect(response.status).toBe(200);
+    expect(taskSyncService.completeTask).toHaveBeenCalledWith("planner-1", undefined);
+  });
 });
 
 function createApp(taskSyncService: object) {
